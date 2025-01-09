@@ -23,44 +23,32 @@ func init() {
 }
 
 func main() {
-	// โหลด DB_CONNECTION_STRING และตรวจสอบว่าค่าว่างหรือไม่
+
 	dbConnStr := os.Getenv("DB_CONNECTION_STRING")
 	if dbConnStr == "" {
 		log.Fatal("DB_CONNECTION_STRING is not set in the environment variables")
 	}
 
-	// เปิดการเชื่อมต่อกับฐานข้อมูล
 	db, err := gorm.Open(postgres.Open(dbConnStr), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	// ตรวจสอบการทำงานของ AutoMigrate
-	if err := db.AutoMigrate(&User{}); err != nil {
+	if err := db.AutoMigrate(); err != nil {
 		log.Fatalf("AutoMigrate failed: %v", err)
 	}
 
-	// ตั้งค่า Echo และลงทะเบียน Route
 	e := echo.New()
 
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, Echo!")
 	})
 
-	// ลงทะเบียน repository, service และ handler
 	repo := gormRepo.NewPdfRepository(db)
 	service := pdfService.NewService(repo)
 	rest.NewPdfHandler(e, service)
 
-	// เริ่มต้นเซิร์ฟเวอร์หลังจากลงทะเบียนทุกอย่างเรียบร้อยแล้ว
 	if err := e.Start(defaultAddress); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
-}
-
-// ตัวอย่าง struct สำหรับ AutoMigrate
-type User struct {
-	ID    uint `gorm:"primaryKey"`
-	Name  string
-	Email string `gorm:"unique"`
 }
