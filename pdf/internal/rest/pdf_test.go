@@ -1,6 +1,9 @@
 package rest
 
 import (
+	"bytes"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,20 +28,29 @@ func TestCompressPDF(t *testing.T) {
 		handler := &PdfHandler{Service: mockService}
 
 		e := echo.New()
-		defer e.Close()
 
 		mockService.On("CompressPDFService", mock.Anything, mock.Anything).Return(nil)
 
-		req := httptest.NewRequest(http.MethodPost, "/pdf/compress", nil)
-		req.Form = map[string][]string{
-			"file": {"test.pdf"},
-		}
+		body := new(bytes.Buffer)
+		writer := multipart.NewWriter(body)
+		file, err := writer.CreateFormFile("file", "test.pdf")
+		assert.NoError(t, err)
+
+		_, err = io.Copy(file, bytes.NewReader([]byte("mock pdf content")))
+		assert.NoError(t, err)
+
+		err = writer.Close()
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, "/pdf/compress", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		err := handler.CompressPDF(c)
+		HandlerErr := handler.CompressPDF(c)
 
-		assert.NoError(t, err)
+		assert.NoError(t, HandlerErr)
 		assert.Equal(t, http.StatusOK, rec.Code)
 	})
 }

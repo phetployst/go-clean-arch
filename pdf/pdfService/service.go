@@ -6,16 +6,11 @@ import (
 	pdfApi "github.com/pdfcpu/pdfcpu/pkg/api"
 )
 
-type PdfRepository interface{}
-
 type Service struct {
-	pdfRepository PdfRepository
 }
 
-func NewService(r PdfRepository) *Service {
-	return &Service{
-		pdfRepository: r,
-	}
+func NewService() *Service {
+	return &Service{}
 }
 
 func (s *Service) CompressPDFService(tempPath, outPath string) error {
